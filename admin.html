@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMIN PANEL - Semata Tailor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .filter-btn.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
+        .blur-content { filter: blur(8px); pointer-events: none; user-select: none; }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen text-gray-100 p-4 md:p-8 overflow-hidden">
+
+    <div id="loginOverlay" class="fixed inset-0 z-50 bg-gray-900 flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 w-full max-w-sm text-center">
+            <div class="mb-6">
+                <span class="bg-indigo-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/50">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </span>
+                <h2 class="text-xl font-bold text-white mt-4">Admin Access</h2>
+                <p class="text-gray-400 text-sm">Masukkan PIN Keamanan</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <input type="password" id="pinInput" class="w-full bg-gray-900 border border-gray-600 text-white px-4 py-3 rounded-lg text-center tracking-[0.5em] font-bold text-xl focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition" placeholder="••••••" maxlength="6" required>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition shadow-lg">
+                    BUKA KUNCI
+                </button>
+            </form>
+            <p id="loginError" class="text-red-400 text-xs mt-4 hidden font-bold">PIN SALAH!</p>
+        </div>
+    </div>
+
+    <div id="mainContent" class="max-w-8xl mx-auto blur-content transition duration-500">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 border-b border-gray-700 pb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-white tracking-wider flex items-center gap-2">
+                    <span class="bg-indigo-600 w-3 h-8 rounded-sm inline-block"></span>
+                    ADMIN CONTROL
+                </h1>
+            </div>
+            <div class="flex flex-wrap gap-3 justify-center md:justify-end">
+                <button onclick="logout()" class="bg-red-900/50 hover:bg-red-900 text-red-200 border border-red-800 px-4 py-2 rounded text-sm flex items-center gap-2">
+                    🔒 Logout
+                </button>
+                <a href="dashboard.html" target="_blank" class="px-4 py-2 border border-gray-600 rounded hover:bg-gray-800 transition text-sm">Lihat Public</a>
+                <button onclick="fetchAdminData()" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm flex items-center gap-2">🔄 Refresh</button>
+                <a href="submit-form.html" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded text-sm font-bold flex items-center gap-2 shadow-lg hover:shadow-indigo-500/30 transition"><span>+</span> Input Order</a>
+            </div>
+        </div>
+
+        <div class="mb-6 space-y-4">
+            <div class="relative">
+                <input type="text" id="searchInput" class="w-full bg-gray-800 border border-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-500" placeholder="Cari Nama, ID, atau No WA...">
+                <div class="absolute right-3 top-3.5">
+                    <span class="flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" title="Auto Sync Active"></span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button onclick="filterStatus('All')" class="filter-btn active px-4 py-1.5 rounded-full border border-gray-600 text-xs font-bold text-gray-300 hover:bg-gray-700 transition">Semua</button>
+                <button onclick="filterStatus('Pending')" class="filter-btn px-4 py-1.5 rounded-full border border-gray-600 text-xs font-bold text-gray-300 hover:bg-gray-700 transition">⏳ Pending</button>
+                <button onclick="filterStatus('Proses')" class="filter-btn px-4 py-1.5 rounded-full border border-gray-600 text-xs font-bold text-gray-300 hover:bg-gray-700 transition">✂️ Proses</button>
+                <button onclick="filterStatus('Selesai')" class="filter-btn px-4 py-1.5 rounded-full border border-gray-600 text-xs font-bold text-gray-300 hover:bg-gray-700 transition">✅ Selesai</button>
+                <button onclick="filterStatus('Diambil')" class="filter-btn px-4 py-1.5 rounded-full border border-gray-600 text-xs font-bold text-gray-300 hover:bg-gray-700 transition">🛍️ Diambil</button>
+                <button onclick="filterStatus('dibatalkan')" class="filter-btn px-4 py-1.5 rounded-full border border-red-800 text-xs font-bold text-red-300 hover:bg-red-900/50 transition">🚫 Dibatalkan</button>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-700">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-900/50">
+                        <tr>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-gray-400 uppercase">ID & Tgl</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-gray-400 uppercase">Customer</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-gray-400 uppercase">Item & Ukuran</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-gray-400 uppercase">Catatan</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-gray-400 uppercase">Deadline</th>
+                            <th class="px-5 py-4 text-left text-xs font-bold text-gray-400 uppercase">Status</th>
+                            <th class="px-5 py-4 text-center text-xs font-bold text-gray-400 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-gray-700">
+                        <tr><td colspan="7" class="text-center py-10 text-gray-500 animate-pulse">Menunggu Login...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mt-4 text-xs text-gray-500 flex justify-between px-2">
+            <span>Total Records: <span id="totalData" class="text-gray-300 font-bold">0</span></span>
+            <span id="lastSync">-</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+        // Kita bikin fungsi global biar bisa dipanggil dari script bawah
+        window.initChatbot = function() {
+            createChat({
+                // ⚠️ Pastikan URL Webhook CHAT TRIGGER ini benar
+                webhookUrl: 'https://semata-n8n.alinktech.my.id/webhook/e8e8542b-787f-4fd2-9569-b6045468a0b1/chat', 
+                
+                showWelcomeScreen: true,
+                initialMessages: ['Halo Bos! 👋', 'Siap bantu update status pesanan.'],
+                i18n: {
+                    en: {
+                        title: 'Asisten Semata',
+                        subtitle: 'AI Support',
+                        getStarted: 'Mulai Chat',
+                        inputPlaceholder: 'Cari pesanan...',
+                    },
+                },
+                style: {
+                    default: { background: '#1f2937', color: '#ffffff', secondary: '#374151' },
+                    headers: { background: '#4f46e5', color: '#ffffff', title: { fontSize: '16px', fontWeight: 'bold' } },
+                    messages: { user: { background: '#4f46e5', color: '#ffffff', borderRadius: '12px 12px 0 12px' }, bot: { background: '#374151', color: '#e5e7eb', borderRadius: '12px 12px 12px 0' } },
+                    button: { backgroundColor: '#4f46e5', color: '#ffffff' }
+                }
+            });
+        }
+    </script>
+
+    <script>
+        const API_URL = "https://semata-n8n.alinktech.my.id/webhook/get-admin-data";
+        
+        // 🔑 PIN SECURITY
+        const CORRECT_PIN = "202020";
+
+        let userPin = sessionStorage.getItem('semataAdminPin'); 
+        const loginOverlay = document.getElementById('loginOverlay');
+        const mainContent = document.getElementById('mainContent');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        let syncInterval;
+        let isChatbotLoaded = false; // Flag biar gak load dobel
+
+        function unlockScreen() {
+            loginOverlay.classList.add('opacity-0', 'pointer-events-none');
+            mainContent.classList.remove('blur-content');
+            document.body.classList.remove('overflow-hidden');
+            
+            // 1. Ambil Data
+            fetchAdminData(); 
+            syncInterval = setInterval(fetchAdminData, 5000); 
+
+            // 2. Munculkan Chatbot (HANYA SETELAH LOGIN)
+            if (!isChatbotLoaded && window.initChatbot) {
+                window.initChatbot(); 
+                isChatbotLoaded = true;
+            }
+        }
+
+        if(userPin) unlockScreen();
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pin = document.getElementById('pinInput').value;
+            
+            if(pin === CORRECT_PIN) {
+                userPin = pin;
+                sessionStorage.setItem('semataAdminPin', userPin);
+                loginError.classList.add('hidden');
+                unlockScreen();
+            } else {
+                loginError.classList.remove('hidden');
+                document.getElementById('pinInput').value = '';
+            }
+        });
+
+        function logout() {
+            sessionStorage.removeItem('semataAdminPin');
+            clearInterval(syncInterval);
+            location.reload(); // Refresh halaman biar chatbot hilang
+        }
+
+        // ... (Sisa fungsi fetch, renderTable, filterStatus sama seperti sebelumnya) ...
+        let allData = [];
+        let currentStatusFilter = 'All';
+
+        async function fetchAdminData() {
+            try {
+                const res = await fetch(API_URL);
+                const json = await res.json();
+                if (json.data && Array.isArray(json.data)) allData = json.data;
+                else if (Array.isArray(json)) allData = json;
+                else allData = [];
+                applyFilters(); 
+                document.getElementById('lastSync').innerText = "Synced: " + new Date().toLocaleTimeString();
+            } catch (err) { console.error("Connection Error:", err); }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            document.getElementById('totalData').innerText = data.length;
+            if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">Data tidak ditemukan.</td></tr>`; return; }
+
+            data.forEach(item => {
+                const id = item.id || item.order_id || "-";
+                const tgl = item.tgl || "-";
+                const nama = item.nama || item.nama_cust || "Tanpa Nama";
+                let rawWa = item.wa || item.no_wa || ""; 
+                let waStr = String(rawWa);
+                let cleanWa = waStr.replace(/\D/g,'');
+                if(cleanWa.startsWith('0')) cleanWa = '62' + cleanWa.substring(1);
+                const waLink = cleanWa ? `https://wa.me/${cleanWa}` : '#';
+                const jenis = item.jenis || item.jenis_pakaian || "-";
+                const ukuran = item.ukuran || "-";
+                const catatan = item.catatan || "-";
+                const deadline = item.deadline || "-";
+                const status = item.status || "Pending";
+                let statusColor = 'bg-gray-700 text-gray-300';
+                if(status === 'Proses') statusColor = 'bg-yellow-900/60 text-yellow-200 border border-yellow-700/50';
+                if(status === 'Selesai') statusColor = 'bg-green-900/60 text-green-200 border border-green-700/50';
+                if(status === 'Diambil') statusColor = 'bg-blue-900/60 text-blue-200 border border-blue-700/50';
+                if(status.toLowerCase() === 'dibatalkan' || status.toLowerCase() === 'batal') statusColor = 'bg-red-900/60 text-red-200 border border-red-700/50';
+                const ukuranShort = ukuran.length > 40 ? ukuran.substring(0, 40) + "..." : ukuran;
+
+                const row = `
+                    <tr class="hover:bg-gray-700/50 transition duration-150 group">
+                        <td class="px-5 py-4 align-top"><div class="font-mono text-indigo-400 font-bold text-sm">${id}</div><div class="text-xs text-gray-500 mt-1">${tgl}</div></td>
+                        <td class="px-5 py-4 align-top"><div class="font-bold text-white text-sm">${nama}</div><div class="text-xs text-gray-400 font-mono mt-0.5">${waStr}</div></td>
+                        <td class="px-5 py-4 align-top max-w-xs"><div class="text-indigo-200 text-sm font-semibold">${jenis}</div><div class="text-xs text-gray-400 mt-1 border-l-2 border-gray-600 pl-2 whitespace-pre-wrap">${ukuranShort}</div></td>
+                        <td class="px-5 py-4 align-top max-w-xs"><div class="text-xs text-gray-300 italic">${catatan}</div></td>
+                        <td class="px-5 py-4 align-top whitespace-nowrap text-sm text-gray-300 font-medium">${deadline}</td>
+                        <td class="px-5 py-4 align-top whitespace-nowrap"><span class="px-2.5 py-1 rounded text-xs font-bold ${statusColor} inline-block shadow-sm capitalize">${status}</span></td>
+                        <td class="px-5 py-4 align-top text-center"><a href="${waLink}" target="_blank" class="inline-flex items-center justify-center bg-green-600 hover:bg-green-500 text-white w-8 h-8 rounded-lg transition shadow-lg hover:shadow-green-500/30"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.017-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg></a></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allData.filter(item => {
+                const matchSearch = (item.nama || "").toLowerCase().includes(searchTerm) || (item.id || "").toLowerCase().includes(searchTerm) || (String(item.wa) || "").includes(searchTerm);
+                let matchStatus = false;
+                if(currentStatusFilter === 'All') matchStatus = true;
+                else if(currentStatusFilter === 'dibatalkan') matchStatus = item.status.toLowerCase() === 'dibatalkan' || item.status.toLowerCase() === 'batal';
+                else matchStatus = item.status === currentStatusFilter;
+                return matchSearch && matchStatus;
+            });
+            renderTable(filtered);
+        }
+        document.getElementById('searchInput').addEventListener('keyup', applyFilters);
+        function filterStatus(status) {
+            currentStatusFilter = status;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn px-4 py-1.5 rounded-full border text-xs font-bold transition";
+                if(btn.innerText.toLowerCase().includes('dibatalkan')) btn.classList.add('border-red-800', 'text-red-300', 'hover:bg-red-900/50');
+                else btn.classList.add('text-gray-300', 'border-gray-600', 'hover:bg-gray-700');
+            });
+            const clickedBtn = event.currentTarget;
+            clickedBtn.className = "filter-btn active px-4 py-1.5 rounded-full border text-xs font-bold transition";
+            if(status === 'dibatalkan') clickedBtn.classList.add('bg-red-900', 'text-white', 'border-red-600');
+            else clickedBtn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-600');
+            applyFilters();
+        }
+    </script>
+</body>
+</html>
